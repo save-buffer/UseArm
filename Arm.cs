@@ -104,32 +104,25 @@ namespace UseArm
 
         public void MoveTo(float X, float Y)
         {
-            //Console.WriteLine($"({X},{Y})");
             const float LearningRate = 0.00001f;
             const int Iterations = 20;
             for (int j = 0; j < CurrentAngles.Length; j++)
-            //for (int i = 0; i < Iterations; i++)
             {
 
                 for (int i = 0; i < Iterations; i++)
                 {
                     var (CurX, CurY) = ForwardKinematics();
-                    float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y);
-                    Console.WriteLine($"Cost: {Cost}");
+                    //float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y);
                     float Grad = CalcGrad(X, Y, CurX, CurY, j) * LearningRate;
                     TempAngles[j] = CurrentAngles[j] - Grad;
-                    Console.WriteLine($"Grad: {Grad}");
-                    //Console.WriteLine($"TempAngle{j}: {TempAngles[j]}");
-
-                    //TempAngles[j] = Math.Max(Math.Min(Params[j].MaxAngle, TempAngles[j]), Params[j].MinAngle);
                     float[] tmp = CurrentAngles;
                     CurrentAngles = TempAngles;
                     TempAngles = tmp;
                 }
-                if (TempAngles[j] > Params[j].MaxAngle)
-                    TempAngles[j] = Params[j].MaxAngle;
-                if (TempAngles[j] < Params[j].MinAngle)
-                    TempAngles[j] = Params[j].MinAngle;
+                if (CurrentAngles[j] > Params[j].MaxAngle)
+                    CurrentAngles[j] = Params[j].MaxAngle;
+                if (CurrentAngles[j] < Params[j].MinAngle)
+                    CurrentAngles[j] = Params[j].MinAngle;
             }
             Console.WriteLine();
             foreach (float k in CurrentAngles)
