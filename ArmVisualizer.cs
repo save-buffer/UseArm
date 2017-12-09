@@ -17,13 +17,13 @@ namespace UseArm
 
             this.MouseDown += (object sender, MouseEventArgs e) =>
             {
-                a.MoveTo((e.X - 100) / 10, (200 - e.Y) / 10);
+                a.MoveTo((e.X - 100) / 10, (200 - e.Y) / 10, 0);
                 this.Invalidate();
             };
 
             this.MouseMove += (object sender, MouseEventArgs e) =>
             {
-                a.MoveTo((e.X - 100) / 10, (200 - e.Y) / 10);
+                a.MoveTo((e.X - 100) / 10, (200 - e.Y) / 10, 0);
                 this.Invalidate();
             };
         }
