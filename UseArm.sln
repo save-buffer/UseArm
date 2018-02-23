@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UseArm", "UseArm.csproj", "{507BB2C3-C701-4F4B-8A89-6241FA6F8E98}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scarlet", "..\..\2017-18\Scarlet\Scarlet.csproj", "{EB8D6FE6-E3DD-4049-89A2-F636C6D70477}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,9 +13,5 @@ Global
 		{507BB2C3-C701-4F4B-8A89-6241FA6F8E98}.Debug|x86.Build.0 = Debug|x86
 		{507BB2C3-C701-4F4B-8A89-6241FA6F8E98}.Release|x86.ActiveCfg = Release|x86
 		{507BB2C3-C701-4F4B-8A89-6241FA6F8E98}.Release|x86.Build.0 = Release|x86
-		{EB8D6FE6-E3DD-4049-89A2-F636C6D70477}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{EB8D6FE6-E3DD-4049-89A2-F636C6D70477}.Debug|x86.Build.0 = Debug|Any CPU
-		{EB8D6FE6-E3DD-4049-89A2-F636C6D70477}.Release|x86.ActiveCfg = Release|Any CPU
-		{EB8D6FE6-E3DD-4049-89A2-F636C6D70477}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

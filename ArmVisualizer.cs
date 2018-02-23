@@ -5,30 +5,27 @@ using System.Reflection;
 
 namespace UseArm
 {
+
     public class ArmVisualizer : Form
     {
         Arm a;
+        const float PIXELS_PER_INCH = 5.0f;
+        const float INCHES_PER_PIXEL = 1.0f / PIXELS_PER_INCH;
 
-        private static (float, float) InverseTransformPoint(float X, float Y)
+        private (float, float) ScreenToModel(float X, float Y)
         {
-            const float SCALE = 10.0f;
-            const float CX = 100.0f;
-            const float CY = 100.0f;
-            return ((X - CX) / SCALE, (300 - CY - Y) / SCALE);
+            return ((X - Width / 2) * INCHES_PER_PIXEL, (Height / 2 - Y) * INCHES_PER_PIXEL);
         }
 
         //Only used for drawing. Scales and flips the point in order to 
         //provide a more human-friendly orientation. 
-        private static (float, float) TransformPoint(float X, float Y)
+        private (float, float) ModelToScreen(float X, float Y)
         {
-            const float SCALE = 10.0f;
-            const float CX = 100.0f;
-            const float CY = 100.0f;
-            return (X * SCALE + CX, 300 - (Y * SCALE + CY));
+            return ((Width / 2 + X * PIXELS_PER_INCH), (Height / 2 - Y * PIXELS_PER_INCH));
         }
 
         //Draw is 2D and uses only Pitch. Takes a Graphics object to draw to. 
-        public static void Draw(Arm a, Graphics g)
+        public void Draw(Arm a, Graphics g)
         {
             float PrevX = 0;
             float PrevY = 0;
@@ -41,14 +38,14 @@ namespace UseArm
                 AngleSum += a.CurrentPitches[i];
                 X += (float)(Params[i].Length * Math.Cos(AngleSum));
                 Y += (float)(Params[i].Length * Math.Sin(AngleSum));
-                var Trans1 = TransformPoint(PrevX, PrevY);
+                var Trans1 = ModelToScreen(PrevX, PrevY);
                 g.FillEllipse(Brushes.DarkRed, Trans1.Item1 - 3, Trans1.Item2 - 3, 6, 6);
-                var Trans2 = TransformPoint(X, Y);
+                var Trans2 = ModelToScreen(X, Y);
                 g.DrawLine(Pens.Red, Trans1.Item1, Trans1.Item2, Trans2.Item1, Trans2.Item2);
                 PrevX = X;
                 PrevY = Y;
             }
-            var Trans = TransformPoint(PrevX, PrevY);
+            var Trans = ModelToScreen(PrevX, PrevY);
             g.FillEllipse(Brushes.DarkRed, Trans.Item1 - 3, Trans.Item2 - 3, 6, 6);
         }
         public ArmVisualizer(Arm Arm)
@@ -65,7 +62,7 @@ namespace UseArm
         }
         private void MoveAndRedraw(object sender, MouseEventArgs e)
         {
-            var (X, Y) = InverseTransformPoint(e.X, e.Y);
+            var (X, Y) = ScreenToModel(e.X, e.Y);
             a.MoveTo(X, Y, 0);
             this.Invalidate();
         }

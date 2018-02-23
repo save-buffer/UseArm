@@ -5,6 +5,12 @@ using System.Drawing;
 
 namespace UseArm
 {
+    //Base 6.8 in            -4pi to 4pi (yaw) Stow: 0
+    //First Joint 28.0 in    -76 degrees to 100 degrees (Pitch) Stow: -76
+    //2nd Joint 28.0 in      11.59 degrees to 170 degrees (Pitch) Stow: 11.59
+    //Hand 12.75 in          -90 degrees to 90 degrees (Pitch) Stow: 0
+    //                       -2pi to 2pi (Roll) Stow: 0
+
 
     /*
      * Basic arm construction:
@@ -71,12 +77,12 @@ namespace UseArm
         }
 
         // FixedAngle makes Yaw constant
-        public ArmPart(float FixedAngle, float Length)
+        public ArmPart(float FixedAngle, float Length, float MinPitch = 0.0f, float MaxPitch = 2.0f * (float)Math.PI)
         {
             this.MinRoll = 0.0f;
             this.MaxRoll = 0.0f;
-            this.MinPitch = 0.0f;
-            this.MaxPitch = (float)Math.PI * 2.0f;
+            this.MinPitch = MinPitch;
+            this.MaxPitch = MaxPitch;
             this.MinYaw = 0.0f;
             this.MaxYaw = 0.0f;
             this.FixedAngle = FixedAngle;
@@ -97,6 +103,21 @@ namespace UseArm
         public static implicit operator ArmPart((double, double) t)
         {
             return new ArmPart((float)t.Item1, (float)t.Item2);
+        }
+
+        public static implicit operator ArmPart((int, int, int, int) t)
+        {
+            return new ArmPart((float)t.Item1, (float)t.Item2, (float)t.Item3, (float)t.Item4);
+        }
+
+        public static implicit operator ArmPart((float, float, float, float) t)
+        {
+            return new ArmPart((float)t.Item1, (float)t.Item2, (float)t.Item3, (float)t.Item4);
+        }
+
+        public static implicit operator ArmPart((double, double, double, double) t)
+        {
+            return new ArmPart((float)t.Item1, (float)t.Item2, (float)t.Item3, (float)t.Item4);
         }
 
         public static implicit operator ArmPart((int, int, int, int, int, int, int) t)
@@ -224,7 +245,8 @@ namespace UseArm
         //0 and 2 * PI
         private static float EnsureStandardForm(float Angle)
         {
-            while (Angle < 0)
+            return Angle % (float)(2 * Math.PI);
+            while (Angle > -2 * Math.PI)
                 Angle += (float)(2 * Math.PI);
             return Angle % (float)(2 * Math.PI);
         }
@@ -234,49 +256,58 @@ namespace UseArm
         //CurrentYaw. 
         public void MoveTo(float X, float Y, float Z)
         {
-            const float LearningRate = 0.0001f;
+            const float LearningRate = 0.00005f;
             const int Iterations = 40;
-            for (int j = 0; j < Params.Length; j++)
+            for (int k = 0; k < 10; k++)
             {
-                if (Params[j].Fixed)
+                for (int j = 0; j < Params.Length; j++)
                 {
-                    var (CurX, CurY, CurZ) = CalculatePosition();
-                    float PrevSum = j > 0 ? PitchSums[j - 1] : 0;
-                    CurrentPitches[j] = EnsureStandardForm((Params[j].FixedAngle - PrevSum));
-                }
-                else
-                {
-                    for (int i = 0; i < Iterations; i++)
+                    if (Params[j].Fixed)
                     {
                         var (CurX, CurY, CurZ) = CalculatePosition();
-                        //float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y) + (CurZ - Z) * (CurZ - Z);
-                        var (GradRoll, GradPitch, GradYaw) = CalcGrad(X, Y, Z, CurX, CurY, CurZ, j);
-
-                        GradRoll *= LearningRate;
-                        GradPitch *= LearningRate;
-                        GradYaw *= LearningRate;
-
-                        TempRolls[j] = CurrentRolls[j] - GradRoll;
-                        TempPitches[j] = CurrentPitches[j] - GradPitch;
-                        TempYaws[j] = CurrentYaws[j] - GradYaw;
-
-                        float[] tmp = CurrentRolls;
-                        CurrentRolls = TempRolls;
-                        TempRolls = tmp;
-
-                        tmp = CurrentPitches;
-                        CurrentPitches = TempPitches;
-                        TempPitches = tmp;
-
-                        tmp = CurrentYaws;
-                        CurrentYaws = TempYaws;
-                        TempYaws = tmp;
+                        float PrevSum = j > 0 ? PitchSums[j - 1] : 0;
+                        CurrentPitches[j] = EnsureStandardForm((Params[j].FixedAngle - PrevSum));
+                        CurrentPitches[j] = Math.Max(Math.Min(CurrentPitches[j], Params[j].MaxPitch), Params[j].MinPitch);
                     }
+                    else
+                    {
+                        for (int i = 0; i < Iterations; i++)
+                        {
+                            var (CurX, CurY, CurZ) = CalculatePosition();
+                            //float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y) + (CurZ - Z) * (CurZ - Z);
+                            var (GradRoll, GradPitch, GradYaw) = CalcGrad(X, Y, Z, CurX, CurY, CurZ, j);
+
+
+                            GradRoll *= LearningRate;
+                            GradPitch *= LearningRate;
+                            GradYaw *= LearningRate;
+
+                            TempRolls[j] = CurrentRolls[j] - GradRoll;
+                            TempPitches[j] = CurrentPitches[j] - GradPitch;
+                            TempYaws[j] = CurrentYaws[j] - GradYaw;
+
+                            float[] tmp = CurrentRolls;
+                            CurrentRolls = TempRolls;
+                            TempRolls = tmp;
+
+                            tmp = CurrentPitches;
+                            CurrentPitches = TempPitches;
+                            TempPitches = tmp;
+
+                            tmp = CurrentYaws;
+                            CurrentYaws = TempYaws;
+                            TempYaws = tmp;
+                        }
+                    }
+                    CurrentRolls[j] = Math.Max(Math.Min(CurrentRolls[j], Params[j].MaxRoll), Params[j].MinRoll);
+                    CurrentPitches[j] = Math.Max(Math.Min(CurrentPitches[j], Params[j].MaxPitch), Params[j].MinPitch);
+                    CurrentYaws[j] = Math.Max(Math.Min(CurrentYaws[j], Params[j].MaxYaw), Params[j].MinYaw);
                 }
-                CurrentRolls[j] = Math.Max(Math.Min(CurrentRolls[j], Params[j].MaxRoll), Params[j].MinRoll);
-                CurrentPitches[j] = Math.Max(Math.Min(CurrentPitches[j], Params[j].MaxPitch), Params[j].MinPitch);
-                CurrentYaws[j] = Math.Max(Math.Min(CurrentYaws[j], Params[j].MaxYaw), Params[j].MinYaw);
             }
+
+            for (int j = 0; j < Params.Length; j++)
+                Console.WriteLine($"{CurrentRolls[j]}, {CurrentPitches[j]}, {CurrentYaws[j]}");
+            Console.WriteLine();
         }
     }
 }
