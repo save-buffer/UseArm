@@ -189,7 +189,7 @@ namespace UseArm
 
         //Calculates the current position of the endpoint of the arm. Fills in
         //the angle sum arrays which will be used for calculating gradient. 
-        private (float X, float Y, float Z) CalculatePosition()
+        public (float X, float Y, float Z) CalculatePosition()
         {
             float X = 0.0f;
             float Y = 0.0f;
@@ -209,7 +209,8 @@ namespace UseArm
 
                 X += (float)(Params[i].Length * Math.Cos(PitchSum) * Math.Cos(YawSum));
                 Y += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(PitchSum));
-                Z += (float)(Params[i].Length * Math.Sin(RollSum) * Math.Sin(YawSum));
+                Z += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(YawSum));
+
             }
             return (X, Y, Z);
         }
@@ -227,7 +228,7 @@ namespace UseArm
 
             for (int a = i; a < Params.Length; a++)
             {
-                RollZ += (float)(Params[a].Length * Math.Cos(RollSums[a]) * Math.Sin(YawSums[a]));
+                RollZ += (float)(Params[a].Length * Math.Sin(RollSums[a]) * Math.Sin(YawSums[a]));
                 RollY += (float)(Params[a].Length * Math.Sin(RollSums[a]) * Math.Sin(PitchSums[a]));
 
                 PitchX += (float)(Params[a].Length * Math.Sin(PitchSums[a]) * Math.Cos(YawSums[a]));
@@ -236,7 +237,7 @@ namespace UseArm
                 YawX += (float)(Params[a].Length * Math.Sin(YawSums[a]) * Math.Cos(PitchSums[a]));
                 YawZ += (float)(Params[a].Length * Math.Cos(YawSums[a]) * Math.Sin(RollSums[a]));
             }
-            return (2 * RollZ * (TZ - Z) - 2 * RollY * (TY - Y),
+            return (2 * RollY * (TY - Y) - 2 * RollZ * (TZ - Z),
                     2 * PitchX * (TX - X) - 2 * PitchY * (TY - Y),
                     2 * YawX * (TX - X) - 2 * YawZ * (TZ - Z));
         }
@@ -246,9 +247,6 @@ namespace UseArm
         private static float EnsureStandardForm(float Angle)
         {
             return Angle % (float)(2 * Math.PI);
-            while (Angle > -2 * Math.PI)
-                Angle += (float)(2 * Math.PI);
-            return Angle % (float)(2 * Math.PI);
         }
 
         //Moves the arm to the target X, Y, and Z. The angles of each
@@ -257,57 +255,49 @@ namespace UseArm
         public void MoveTo(float X, float Y, float Z)
         {
             const float LearningRate = 0.00005f;
-            const int Iterations = 40;
-            for (int k = 0; k < 10; k++)
+            const int Iterations = 20;
+            for (int i = 0; i < Iterations; i++)
             {
+                var (CurX, CurY, CurZ) = CalculatePosition();
+                Console.WriteLine("Z: " + CurZ);
                 for (int j = 0; j < Params.Length; j++)
                 {
                     if (Params[j].Fixed)
                     {
-                        var (CurX, CurY, CurZ) = CalculatePosition();
+
                         float PrevSum = j > 0 ? PitchSums[j - 1] : 0;
                         CurrentPitches[j] = EnsureStandardForm((Params[j].FixedAngle - PrevSum));
                         CurrentPitches[j] = Math.Max(Math.Min(CurrentPitches[j], Params[j].MaxPitch), Params[j].MinPitch);
+                        continue;
                     }
-                    else
-                    {
-                        for (int i = 0; i < Iterations; i++)
-                        {
-                            var (CurX, CurY, CurZ) = CalculatePosition();
-                            //float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y) + (CurZ - Z) * (CurZ - Z);
-                            var (GradRoll, GradPitch, GradYaw) = CalcGrad(X, Y, Z, CurX, CurY, CurZ, j);
+                    //float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y) + (CurZ - Z) * (CurZ - Z);
+                    var (GradRoll, GradPitch, GradYaw) = CalcGrad(X, Y, Z, CurX, CurY, CurZ, j);
 
+                    GradRoll *= LearningRate;
+                    GradPitch *= LearningRate;
+                    GradYaw *= LearningRate;
 
-                            GradRoll *= LearningRate;
-                            GradPitch *= LearningRate;
-                            GradYaw *= LearningRate;
+                    TempRolls[j] = CurrentRolls[j] - GradRoll;
+                    TempPitches[j] = CurrentPitches[j] - GradPitch;
+                    TempYaws[j] = CurrentYaws[j] - GradYaw;
 
-                            TempRolls[j] = CurrentRolls[j] - GradRoll;
-                            TempPitches[j] = CurrentPitches[j] - GradPitch;
-                            TempYaws[j] = CurrentYaws[j] - GradYaw;
+                    float[] tmp = CurrentRolls;
+                    CurrentRolls = TempRolls;
+                    TempRolls = tmp;
 
-                            float[] tmp = CurrentRolls;
-                            CurrentRolls = TempRolls;
-                            TempRolls = tmp;
+                    tmp = CurrentPitches;
+                    CurrentPitches = TempPitches;
+                    TempPitches = tmp;
 
-                            tmp = CurrentPitches;
-                            CurrentPitches = TempPitches;
-                            TempPitches = tmp;
+                    tmp = CurrentYaws;
+                    CurrentYaws = TempYaws;
+                    TempYaws = tmp;
 
-                            tmp = CurrentYaws;
-                            CurrentYaws = TempYaws;
-                            TempYaws = tmp;
-                        }
-                    }
                     CurrentRolls[j] = Math.Max(Math.Min(CurrentRolls[j], Params[j].MaxRoll), Params[j].MinRoll);
                     CurrentPitches[j] = Math.Max(Math.Min(CurrentPitches[j], Params[j].MaxPitch), Params[j].MinPitch);
                     CurrentYaws[j] = Math.Max(Math.Min(CurrentYaws[j], Params[j].MaxYaw), Params[j].MinYaw);
                 }
             }
-
-            for (int j = 0; j < Params.Length; j++)
-                Console.WriteLine($"{CurrentRolls[j]}, {CurrentPitches[j]}, {CurrentYaws[j]}");
-            Console.WriteLine();
         }
     }
 }
