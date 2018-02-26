@@ -5,6 +5,7 @@ using Scarlet.IO;
 using Scarlet.Components;
 using Scarlet.Components.Motors;
 using Scarlet.Components.Sensors;
+using System.Diagnostics;
 
 namespace UseArm
 {
@@ -30,6 +31,8 @@ namespace UseArm
         ISensor ElbowPot;
         ISensor WristPot;
 
+        IPWMOutput ShoulderPWM, ElbowPWM;
+
         public ArmMotorController()
         {
 
@@ -52,10 +55,11 @@ namespace UseArm
             a = new Arm((0, 0, Math.PI / 2, Math.PI / 2, 0, 0, 6.8),
                         (0, 0, -76 * DegToRad, 100 * DegToRad, 0, 0, 28.0),
                         (0, 0, -168.51 * DegToRad, -10 * DegToRad, 0, 0, 28.0),
-                        (0, 12.75, -Math.PI / 2, Math.PI / 2));
+                        (-2 * Math.PI, 2 * Math.PI, -Math.PI / 2, Math.PI / 2, 0, 0, 12.75));
+            //(0, 12.75, -Math.PI / 2, Math.PI / 2));
 
-            IPWMOutput ShoulderPWM = PWMBBB.PWMDevice1.OutputB;
-            IPWMOutput ElbowPWM = PWMBBB.PWMDevice1.OutputA;
+            ShoulderPWM = PWMBBB.PWMDevice1.OutputB;
+            ElbowPWM = PWMBBB.PWMDevice1.OutputA;
             IPWMOutput WristPWM1 = PWMBBB.PWMDevice2.OutputB;
             IPWMOutput WristPWM2 = PWMBBB.PWMDevice2.OutputA;
 
@@ -63,24 +67,37 @@ namespace UseArm
             IAnalogueIn ShoulderADC = new AnalogueInBBB(ShoulderPotPin);
             IAnalogueIn ElbowADC = new AnalogueInBBB(ElbowPotPin);
             IAnalogueIn WristADC = new AnalogueInBBB(WristPotPin);
-            Shoulder = new TalonMC(ShoulderPWM, 0.3f);
-            Elbow = new TalonMC(ElbowPWM, 0.3f);
+            Shoulder = new TalonMC(ShoulderPWM, 0.2f);
+            Elbow = new TalonMC(ElbowPWM, 0.2f);
             Wrist1 = new CytronMD30C(WristPWM1, WristDirectionGPIO, 0.3f);
             Wrist2 = new CytronMD30C(WristPWM2, WristDirectionGPIO, 0.3f);
 
             ShoulderPot = new Potentiometer(ShoulderADC, 300);
             ElbowPot = new Potentiometer(ElbowADC, 300);
             WristPot = new Potentiometer(WristADC, 300);
+
+            Wrist1.SetSpeed(0.5f);
+            Wrist2.SetSpeed(0.5f);
         }
 
         public void MoveMotors()
         {
-            /*Shoulder.SetSpeed(-0.001f);
-            Thread.Sleep(50);
-            Shoulder.SetSpeed(0);*/
-            Elbow.SetSpeed(0.01f);
-            Thread.Sleep(1000);
+            Shoulder.SetSpeed(0.3f);
+            Elbow.SetSpeed(0.3f);
+            Thread.Sleep(2000);
+            Shoulder.SetSpeed(0);
+            ShoulderPWM.SetEnabled(false);
             Elbow.SetSpeed(0);
+            ElbowPWM.SetEnabled(false);
+
+            /*Elbow.SetSpeed(0.2f);
+            Console.ReadLine();
+            Elbow.SetSpeed(0.1f);
+            Thread.Sleep(1000);
+            Elbow.SetSpeed(0.05f);
+            Thread.Sleep(1000);
+            Elbow.SetSpeed(0);*/
+            //Shoulder.SetSpeed(0);
             /*Wrist1.SetSpeed(0.01f);
             Wrist2.SetSpeed(0.01f);
             Thread.Sleep(500);

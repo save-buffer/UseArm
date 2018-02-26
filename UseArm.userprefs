@@ -1,23 +1,11 @@
 ﻿<Properties StartupConfiguration="{507BB2C3-C701-4F4B-8A89-6241FA6F8E98}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="ArmMotorController.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="ArmVisualizer.cs">
     <Files>
-      <File FileName="Program.cs" Line="10" Column="27" />
-      <File FileName="Arm.cs" Line="248" Column="49" />
-      <File FileName="ArmVisualizer.cs" Line="57" Column="37" />
-      <File FileName="ArmMotorController.cs" Line="44" Column="30" />
+      <File FileName="Program.cs" Line="14" Column="87" />
+      <File FileName="Arm.cs" Line="12" Column="41" />
+      <File FileName="ArmVisualizer.cs" Line="56" Column="27" />
+      <File FileName="ArmMotorController.cs" Line="58" Column="93" />
     </Files>
-    <Pads>
-      <Pad Id="ProjectPad">
-        <State name="__root__">
-          <Node name="UseArm" expanded="True">
-            <Node name="UseArm" expanded="True">
-              <Node name="References" expanded="True" />
-              <Node name="ArmMotorController.cs" selected="True" />
-            </Node>
-          </Node>
-        </State>
-      </Pad>
-    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
