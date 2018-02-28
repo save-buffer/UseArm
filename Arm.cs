@@ -208,8 +208,16 @@ namespace UseArm
                 YawSums[i] = YawSum;
 
                 X += (float)(Params[i].Length * Math.Cos(PitchSum) * Math.Cos(YawSum));
-                Y += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(PitchSum));
-                Z += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(YawSum));
+                if (Math.Abs(RollSum) > 1e-8)
+                {
+                    Y += (float)(Params[i].Length * Math.Sin(RollSum) * Math.Sin(PitchSum));
+                    Z += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(YawSum));
+                }
+                else
+                {
+                    Y += (float)(Params[i].Length * Math.Sin(PitchSum));
+                    Z += (float)(Params[i].Length * Math.Sin(YawSum));
+                }
 
             }
             return (X, Y, Z);
@@ -228,16 +236,26 @@ namespace UseArm
 
             for (int a = i; a < Params.Length; a++)
             {
-                RollZ += (float)(Params[a].Length * Math.Sin(RollSums[a]) * Math.Sin(YawSums[a]));
-                RollY += (float)(Params[a].Length * Math.Sin(RollSums[a]) * Math.Sin(PitchSums[a]));
+                if (Math.Abs(RollSums[a]) > 1e-8)
+                {
+                    RollZ += (float)(Params[a].Length * Math.Sin(RollSums[a]) * Math.Sin(YawSums[a]));
+                    RollY += (float)(Params[a].Length * Math.Sin(RollSums[a]) * Math.Sin(PitchSums[a]));
+                    YawZ += (float)(Params[a].Length * Math.Cos(YawSums[a]) * Math.Sin(RollSums[a]));
+                }
+                else
+                {
+                    RollZ += (float)(Params[a].Length * Math.Sin(YawSums[a]));
+                    RollY += (float)(Params[a].Length * Math.Sin(PitchSums[a]));
+                    YawZ += (float)(Params[a].Length * Math.Cos(YawSums[a]));
+
+                }
 
                 PitchX += (float)(Params[a].Length * Math.Sin(PitchSums[a]) * Math.Cos(YawSums[a]));
                 PitchY += (float)(Params[a].Length * Math.Cos(PitchSums[a]) * Math.Cos(RollSums[a]));
 
                 YawX += (float)(Params[a].Length * Math.Sin(YawSums[a]) * Math.Cos(PitchSums[a]));
-                YawZ += (float)(Params[a].Length * Math.Cos(YawSums[a]) * Math.Sin(RollSums[a]));
             }
-            return (2 * RollY * (TY - Y) - 2 * RollZ * (TZ - Z),
+            return (2 * RollZ * (TZ - Z) - 2 * RollY * (TY - Y),
                     2 * PitchX * (TX - X) - 2 * PitchY * (TY - Y),
                     2 * YawX * (TX - X) - 2 * YawZ * (TZ - Z));
         }
@@ -255,7 +273,7 @@ namespace UseArm
         public void MoveTo(float X, float Y, float Z)
         {
             const float LearningRate = 0.00005f;
-            const int Iterations = 20;
+            const int Iterations = 40;
             for (int i = 0; i < Iterations; i++)
             {
                 var (CurX, CurY, CurZ) = CalculatePosition();
@@ -264,7 +282,6 @@ namespace UseArm
                 {
                     if (Params[j].Fixed)
                     {
-
                         float PrevSum = j > 0 ? PitchSums[j - 1] : 0;
                         CurrentPitches[j] = EnsureStandardForm((Params[j].FixedAngle - PrevSum));
                         CurrentPitches[j] = Math.Max(Math.Min(CurrentPitches[j], Params[j].MaxPitch), Params[j].MinPitch);
@@ -272,6 +289,8 @@ namespace UseArm
                     }
                     //float Cost = (CurX - X) * (CurX - X) + (CurY - Y) * (CurY - Y) + (CurZ - Z) * (CurZ - Z);
                     var (GradRoll, GradPitch, GradYaw) = CalcGrad(X, Y, Z, CurX, CurY, CurZ, j);
+                    if (j == 0)
+                        Console.WriteLine("GradYaw:" + GradYaw);
 
                     GradRoll *= LearningRate;
                     GradPitch *= LearningRate;

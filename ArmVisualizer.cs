@@ -50,7 +50,6 @@ namespace UseArm
                 X += (float)(Params[i].Length * Math.Cos(PitchSum) * Math.Cos(YawSum));
                 Y += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(PitchSum));
                 Z += (float)(Params[i].Length * Math.Cos(RollSum) * Math.Sin(YawSum));
-
                 var Trans1 = ModelToScreen(PrevX, PrevY);
                 float ZNorm = Z / 50.0f;
                 //Color c = Color.FromArgb((int)(ZNorm * 255), 0, (int)((1 - ZNorm) * 2));
